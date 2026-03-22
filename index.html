@@ -12,7 +12,6 @@
     .glass-panel { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.5); }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    /* 所見即所得的手機外框 */
     .mockup-phone { width: 340px; height: 700px; border: 12px solid #1f2937; border-radius: 40px; overflow-y: auto; background: #fff; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); margin: 0 auto;}
     .mockup-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 24px; background: #1f2937; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; z-index: 10; }
   </style>
@@ -20,20 +19,39 @@
 <body class="text-gray-800">
 
   <div id="app" class="min-h-screen w-full flex flex-col items-center justify-center sm:p-4">
+    
     <div v-if="currentView === 'login'" class="w-full max-w-md p-8 sm:rounded-3xl shadow-2xl glass-panel">
         <h1 class="text-4xl font-black text-center text-pink-500 mb-6">Ruby.</h1>
         <form @submit.prevent="handleLogin" class="space-y-4">
-            <input v-model="loginForm.email" type="email" placeholder="Email" class="w-full p-4 rounded-xl border">
-            <input v-model="loginForm.password" type="password" placeholder="密碼" class="w-full p-4 rounded-xl border">
-            <button class="w-full bg-pink-500 text-white p-4 rounded-xl font-bold">{{ isLoading ? '載入中...' : '登入' }}</button>
+            <input v-model="loginForm.email" type="email" required placeholder="Email" class="w-full p-4 rounded-xl border focus:ring-2 focus:ring-pink-400 outline-none">
+            <input v-model="loginForm.password" type="password" required placeholder="密碼" class="w-full p-4 rounded-xl border focus:ring-2 focus:ring-pink-400 outline-none">
+            <button class="w-full bg-pink-500 hover:bg-pink-600 transition text-white p-4 rounded-xl font-bold">{{ isLoading ? '載入中...' : '登入' }}</button>
         </form>
+        <div class="mt-6 text-center text-sm">
+            還沒有帳號？ <a href="#" @click.prevent="currentView = 'register'" class="text-pink-600 font-bold hover:underline">立即申請開通</a>
+        </div>
+    </div>
+
+    <div v-if="currentView === 'register'" class="w-full max-w-md p-8 sm:rounded-3xl shadow-2xl glass-panel">
+        <h1 class="text-3xl font-black text-center text-gray-900 mb-6">系統申請開通</h1>
+        <form @submit.prevent="handleRegister" class="space-y-4">
+            <input v-model="regForm.name" type="text" required placeholder="您的姓名 / 品牌名稱" class="w-full p-4 rounded-xl border focus:ring-2 focus:ring-pink-400 outline-none">
+            <input v-model="regForm.email" type="email" required placeholder="聯絡信箱 (即登入帳號)" class="w-full p-4 rounded-xl border focus:ring-2 focus:ring-pink-400 outline-none">
+            <button type="submit" :disabled="isLoading" class="w-full bg-gray-900 hover:bg-black transition text-white p-4 rounded-xl font-bold disabled:opacity-50">
+                {{ isLoading ? '建置中...' : '確認申請並取得帳號' }}
+            </button>
+        </form>
+        <p v-if="isRegSuccess" class="mt-4 text-green-600 text-sm font-bold text-center">✅ 申請成功！請至 Email 收取密碼。</p>
+        <div class="mt-6 text-center text-sm">
+            已經有帳號了？ <a href="#" @click.prevent="currentView = 'login'" class="text-pink-600 font-bold hover:underline">返回登入</a>
+        </div>
     </div>
 
     <div v-if="currentView === 'dashboard'" class="w-full sm:max-w-6xl h-screen sm:h-[90vh] flex flex-col sm:rounded-3xl shadow-2xl bg-gray-50 overflow-hidden relative">
       
       <div class="flex justify-between items-center p-5 bg-white border-b sticky top-0 z-20">
         <h1 class="text-lg font-black">Ruby Design. <span class="text-sm font-normal text-gray-500">| {{ currentUser?.name }}</span></h1>
-        <button @click="logout" class="text-red-500 font-bold"><i class="ph ph-sign-out text-xl"></i></button>
+        <button @click="logout" class="text-red-500 font-bold hover:bg-red-50 p-2 rounded-lg transition"><i class="ph ph-sign-out text-xl"></i></button>
       </div>
 
       <div class="p-5 sm:p-8 flex-1 overflow-y-auto no-scrollbar pb-24 sm:pb-8">
@@ -42,7 +60,7 @@
             
             <div class="mockup-phone no-scrollbar">
                 <div class="mockup-notch"></div>
-                <div class="pt-12 px-6 pb-10 flex flex-col items-center min-h-full" :style="{ backgroundColor: profile.bgColor }">
+                <div class="pt-12 px-6 pb-10 flex flex-col items-center min-h-full transition-colors duration-300" :style="{ backgroundColor: profile.bgColor }">
                     
                     <div @click="openMediaLibrary('avatar')" class="relative group cursor-pointer mt-6 mb-4">
                         <img :src="profile.avatarUrl || 'https://via.placeholder.com/150'" class="w-28 h-28 rounded-full object-cover border-4 border-white shadow-lg">
@@ -82,10 +100,25 @@
 
             <div class="w-full lg:w-80 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
                 <h3 class="font-black text-lg mb-4 text-gray-800">全域視覺設定</h3>
-                <div class="mb-4">
+                
+                <div class="mb-6">
                     <label class="block text-sm font-bold text-gray-600 mb-2">背景顏色</label>
-                    <input type="color" v-model="profile.bgColor" class="w-full h-10 rounded cursor-pointer">
+                    
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        <button v-for="color in presetColors" :key="color" 
+                                @click="profile.bgColor = color"
+                                class="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
+                                :class="profile.bgColor === color ? 'border-gray-800 shadow-md' : 'border-gray-100'"
+                                :style="{ backgroundColor: color }">
+                        </button>
+                    </div>
+                    
+                    <div class="flex items-center gap-3 bg-gray-50 p-2 rounded-xl border border-gray-100">
+                        <input type="color" v-model="profile.bgColor" class="w-8 h-8 rounded cursor-pointer border-0 bg-transparent p-0">
+                        <span class="text-sm font-bold text-gray-500 uppercase">{{ profile.bgColor }}</span>
+                    </div>
                 </div>
+
                 <button @click="saveProfileData" class="w-full bg-gray-900 text-white font-bold py-3 rounded-xl hover:bg-black transition flex justify-center items-center gap-2">
                     <i v-if="isSaving" class="ph ph-spinner animate-spin"></i>
                     {{ isSaving ? '儲存同步中...' : '儲存變更至前台' }}
@@ -96,7 +129,7 @@
         <div v-show="activeTab === 'line'">
             <div class="bg-white p-6 rounded-2xl shadow-sm text-center">
                 <h2 class="font-bold mb-4">LINE 輪播圖文管理</h2>
-                <button @click="openMediaLibrary('slide')" class="w-full py-8 border-2 border-dashed border-purple-300 rounded-xl bg-purple-50 text-purple-600 font-bold">
+                <button @click="openMediaLibrary('slide')" class="w-full py-8 border-2 border-dashed border-purple-300 rounded-xl bg-purple-50 text-purple-600 font-bold hover:bg-purple-100 transition">
                   開啟圖庫上傳 / 選擇輪播圖片
                 </button>
             </div>
@@ -105,8 +138,8 @@
       </div>
 
       <div class="fixed sm:absolute bottom-0 w-full bg-white border-t flex justify-around p-2 z-30">
-        <button @click="activeTab = 'profile'" :class="activeTab === 'profile' ? 'text-pink-600' : 'text-gray-400'" class="flex flex-col items-center p-2 font-bold text-sm"><i class="ph-fill ph-device-mobile text-2xl"></i> Profile設計</button>
-        <button @click="activeTab = 'line'" :class="activeTab === 'line' ? 'text-purple-600' : 'text-gray-400'" class="flex flex-col items-center p-2 font-bold text-sm"><i class="ph-fill ph-cards text-2xl"></i> LINE輪播</button>
+        <button @click="activeTab = 'profile'" :class="activeTab === 'profile' ? 'text-pink-600' : 'text-gray-400'" class="flex flex-col items-center p-2 font-bold text-sm transition"><i class="ph-fill ph-device-mobile text-2xl"></i> Profile設計</button>
+        <button @click="activeTab = 'line'" :class="activeTab === 'line' ? 'text-purple-600' : 'text-gray-400'" class="flex flex-col items-center p-2 font-bold text-sm transition"><i class="ph-fill ph-cards text-2xl"></i> LINE輪播</button>
       </div>
 
     </div>
@@ -116,16 +149,16 @@
             
             <div class="p-5 border-b flex justify-between items-center bg-gray-50">
                 <h2 class="font-black text-lg flex items-center gap-2"><i class="ph-fill ph-folder-open text-pink-500"></i> 您的雲端圖庫</h2>
-                <button @click="isMediaModalOpen = false" class="text-gray-400 hover:text-red-500 bg-white p-2 rounded-full shadow-sm"><i class="ph ph-x text-lg"></i></button>
+                <button @click="isMediaModalOpen = false" class="text-gray-400 hover:text-red-500 bg-white p-2 rounded-full shadow-sm transition"><i class="ph ph-x text-lg"></i></button>
             </div>
 
             <div class="p-5 flex-1 overflow-y-auto bg-gray-100">
                 <div class="mb-6 flex gap-3">
                     <input type="file" ref="fileInput" @change="handleFileSelect" accept="image/*" class="hidden">
-                    <button @click="$refs.fileInput.click()" class="flex-1 bg-white border border-gray-200 text-gray-700 font-bold py-3 rounded-xl shadow-sm hover:border-pink-500 flex justify-center items-center gap-2">
+                    <button @click="$refs.fileInput.click()" class="flex-1 bg-white border border-gray-200 text-gray-700 font-bold py-3 rounded-xl shadow-sm hover:border-pink-500 flex justify-center items-center gap-2 transition">
                         <i class="ph ph-upload-simple"></i> 選擇電腦/手機照片
                     </button>
-                    <button v-if="selectedFile" @click="uploadImageToDrive" :disabled="isUploading" class="flex-1 bg-pink-500 text-white font-bold py-3 rounded-xl shadow-md disabled:opacity-50">
+                    <button v-if="selectedFile" @click="uploadImageToDrive" :disabled="isUploading" class="flex-1 bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 rounded-xl shadow-md disabled:opacity-50 transition">
                         {{ isUploading ? '高畫質上傳中...' : '確認上傳' }}
                     </button>
                 </div>
@@ -162,14 +195,18 @@
         const activeTab = ref('profile'); 
         const currentUser = ref(null);
         const loginForm = ref({ email: '', password: '' });
+        const regForm = ref({ name: '', email: '' });
         
         const isLoading = ref(false);
         const isSaving = ref(false);
+        const isRegSuccess = ref(false);
 
-        // API 網址
+        // 🟢 請確保此處為您最新部署的 API 網址
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzFIevyKloCU9wbGMUdAES-BKIr9KxXVUZgfIfRJmrWlZnBR6QuE9kIcESvbATzW0t4bw/exec';
 
-        // 🌟 WYSIWYG Profile 狀態
+        // 🌟 預設調色盤顏色清單
+        const presetColors = ref(['#FDF2F8', '#F0F9FF', '#F0FDF4', '#FFFBEB', '#F3F4F6', '#1F2937', '#ffffff']);
+
         const profile = ref({
             avatarUrl: '',
             name: '',
@@ -178,11 +215,10 @@
         });
         const buttons = ref([]);
 
-        // 🌟 Media Library 狀態
         const isMediaModalOpen = ref(false);
         const mediaImages = ref([]);
         const isLoadingImages = ref(false);
-        const currentUploadContext = ref(''); // 'avatar', 'buttonIcon', 'slide'
+        const currentUploadContext = ref('');
         const currentButtonIndex = ref(null);
 
         const selectedFile = ref(null);
@@ -190,8 +226,13 @@
         const isUploading = ref(false);
 
         const apiCall = async (payload) => {
-          const res = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
-          return await res.json();
+          try {
+            const res = await fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify(payload) });
+            return await res.json();
+          } catch (e) {
+            console.error('API Error:', e);
+            throw e;
+          }
         };
 
         const handleLogin = async () => {
@@ -201,14 +242,28 @@
                 if(res.status === 'success') {
                     currentUser.value = res.data;
                     currentView.value = 'dashboard';
-                    // (實務上這裡會呼叫 API 抓取現有的 Profile 與 按鈕)
-                } else alert('登入失敗');
+                } else alert('登入失敗: ' + res.message);
+            } catch (e) {
+                alert('系統連線異常，請稍後再試');
+            } finally { isLoading.value = false; }
+        };
+
+        const handleRegister = async () => {
+            isLoading.value = true;
+            isRegSuccess.value = false;
+            try {
+                const res = await apiCall({ action: 'register', ...regForm.value });
+                if(res.status === 'success') {
+                    isRegSuccess.value = true;
+                    regForm.value = { name: '', email: '' };
+                } else alert('註冊失敗');
+            } catch (e) {
+                alert('系統連線異常');
             } finally { isLoading.value = false; }
         };
 
         const logout = () => { currentView.value = 'login'; currentUser.value = null; };
 
-        // ==== WYSIWYG 互動邏輯 ====
         const addNewButton = () => {
             buttons.value.push({ id: Date.now().toString(), title: '新按鈕', url: '', color: '#ffffff', iconUrl: '' });
         };
@@ -216,17 +271,14 @@
         
         const saveProfileData = async () => {
             isSaving.value = true;
-            // 💡 這裡會發送 API 給 GAS 將 profile 與 buttons 陣列寫入 Sheet
             setTimeout(() => { alert('已同步至前台網頁！'); isSaving.value = false; }, 1000);
         };
 
-        // ==== 圖庫 (Media Library) 邏輯 ====
         const openMediaLibrary = async (context, btnIndex = null) => {
             currentUploadContext.value = context;
             currentButtonIndex.value = btnIndex;
             isMediaModalOpen.value = true;
             
-            // 判斷要讀取哪個子資料夾的圖片
             const targetFolderId = context === 'slide' ? currentUser.value.slideFolderId : currentUser.value.profileFolderId;
             
             isLoadingImages.value = true;
@@ -244,7 +296,6 @@
             previewImage.value = URL.createObjectURL(file);
         };
 
-        // 真實上傳高畫質圖片至對應子資料夾
         const uploadImageToDrive = () => {
           if(!selectedFile.value) return;
           isUploading.value = true;
@@ -269,33 +320,36 @@
                 mimeType: mimeType,
                 extension: extension
               });
+              
               if(result.status === 'success') {
-                // 上傳成功，將新圖加入圖庫清單
                 mediaImages.value.unshift({ id: result.id, url: result.fileUrl, name: result.name });
                 previewImage.value = null; selectedFile.value = null;
-                // 自動套用該圖片
                 selectImage(result.fileUrl);
+              } else {
+                alert('上傳發生問題：' + result.message);
               }
-            } catch (err) { alert('上傳失敗'); }
+            } catch (err) { 
+                alert('上傳連線失敗，請檢查網路或控制台'); 
+            }
             finally { isUploading.value = false; }
           };
           reader.readAsDataURL(selectedFile.value);
         };
 
-        // 將圖庫選擇的圖片應用到對應的位置 (WYSIWYG)
         const selectImage = (url) => {
             if (currentUploadContext.value === 'avatar') {
                 profile.value.avatarUrl = url;
             } else if (currentUploadContext.value === 'buttonIcon') {
                 buttons.value[currentButtonIndex.value].iconUrl = url;
             } else if (currentUploadContext.value === 'slide') {
-                alert('已選擇輪播圖片：' + url); // 輪播邏輯可後續擴充
+                alert('已選擇輪播圖片：' + url);
             }
-            isMediaModalOpen.value = false; // 關閉視窗
+            isMediaModalOpen.value = false; 
         };
 
         return { 
-          currentView, activeTab, currentUser, loginForm, isLoading, isSaving, handleLogin, logout,
+          currentView, activeTab, currentUser, loginForm, regForm, isRegSuccess, presetColors,
+          isLoading, isSaving, handleLogin, handleRegister, logout,
           profile, buttons, addNewButton, deleteButton, saveProfileData,
           isMediaModalOpen, mediaImages, isLoadingImages, openMediaLibrary, selectImage,
           handleFileSelect, uploadImageToDrive, selectedFile, previewImage, isUploading
