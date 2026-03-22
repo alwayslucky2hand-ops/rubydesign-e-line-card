@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>申請開通 | 露比設計電子名片系統</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <style>
+    body { background-color: #FAFAFA; font-family: 'Inter', sans-serif; }
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-50 to-purple-50">
+
+  <div id="app" class="w-full max-w-4xl flex flex-col md:flex-row rounded-2xl shadow-2xl overflow-hidden glass-panel m-4">
+    
+    <div class="md:w-1/2 bg-gradient-to-br from-pink-400 to-purple-500 p-10 text-white flex flex-col justify-center">
+      <h1 class="text-4xl font-bold mb-4">Ruby Design.</h1>
+      <p class="text-lg opacity-90 mb-8">打造世界級的個人品牌，<br>從一張會說話的 LINE 電子名片開始。</p>
+      <div class="h-48 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center">
+        <span class="text-white/80">電子名片預覽圖 (Mockup)</span>
+      </div>
+    </div>
+
+    <div class="md:w-1/2 p-10 bg-white">
+      <h2 class="text-2xl font-bold text-gray-800 mb-2">系統申請開通</h2>
+      <p class="text-gray-500 mb-8 text-sm">填寫下方資訊，系統將自動為您建立專屬後台與雲端空間。</p>
+
+      <form @submit.prevent="submitForm" class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">您的姓名 / 品牌名稱</label>
+          <input v-model="form.name" type="text" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-pink-400 focus:outline-none transition">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">聯絡信箱 (即登入帳號)</label>
+          <input v-model="form.email" type="email" required class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-pink-400 focus:outline-none transition">
+        </div>
+
+        <button type="submit" :disabled="isLoading" class="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 rounded-lg transition shadow-lg disabled:opacity-50">
+          <span v-if="!isLoading">送出申請並取得帳號</span>
+          <span v-else>系統建置中，請稍候...</span>
+        </button>
+      </form>
+
+      <div v-if="isSuccess" class="mt-6 p-4 bg-green-50 text-green-700 rounded-lg text-sm border border-green-200">
+        ✅ 申請成功！請前往您的信箱收取開通通知與預設密碼。
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const { createApp, ref } = Vue;
+
+    createApp({
+      setup() {
+        const form = ref({ name: '', email: '' });
+        const isLoading = ref(false);
+        const isSuccess = ref(false);
+
+        // 這裡填入您剛剛部署 GAS 取得的 Web App URL
+        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzFIevyKloCU9wbGMUdAES-BKIr9KxXVUZgfIfRJmrWlZnBR6QuE9kIcESvbATzW0t4bw/exec'; 
+
+        const submitForm = async () => {
+          isLoading.value = true;
+          isSuccess.value = false;
+          try {
+            const response = await fetch(GAS_API_URL, {
+              method: 'POST',
+              body: JSON.stringify(form.value)
+            });
+            const result = await response.json();
+            if(result.status === 'success') {
+              isSuccess.value = true;
+              form.value = { name: '', email: '' }; // 清空表單
+            }
+          } catch (error) {
+            alert('系統發生錯誤，請稍後再試。');
+            console.error(error);
+          } finally {
+            isLoading.value = false;
+          }
+        };
+
+        return { form, isLoading, isSuccess, submitForm };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
