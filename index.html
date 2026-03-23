@@ -95,9 +95,11 @@
         <h1 class="text-base sm:text-lg font-black">Ruby.Brand.Design <span class="text-sm font-normal text-gray-500 hidden sm:inline-block">| {{ currentUser.name }}</span></h1>
         
         <div class="flex items-center gap-2">
-          <a :href="'https://alwayslucky2hand-ops.github.io/rubydesign-e-namecard-share/?id=' + currentUser.memberId" target="_blank" class="bg-pink-500 text-white font-bold text-xs sm:text-sm px-3 py-2 rounded-lg hover:bg-pink-600 transition flex items-center gap-1.5 shadow-sm">
-            <i class="ph-bold ph-link"></i> <span class="hidden sm:inline">前往個人介紹頁</span><span class="sm:hidden">預覽</span>
-          </a>
+          <button @click="copyAndShareLiffUrl" :class="isLinkCopied ? 'bg-green-500 hover:bg-green-600' : 'bg-[#06C755] hover:bg-[#05b34c]'" class="text-white font-bold text-xs sm:text-sm px-3 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm">
+            <i class="ph-bold" :class="isLinkCopied ? 'ph-check-circle' : 'ph-share-network'"></i> 
+            <span class="hidden sm:inline">{{ isLinkCopied ? '已複製！跳轉中...' : '分享名片至 LINE' }}</span>
+            <span class="sm:hidden">{{ isLinkCopied ? '已複製' : '分享' }}</span>
+          </button>
           
           <button @click="logout" class="text-gray-400 font-bold hover:bg-gray-100 p-2 rounded-lg transition flex items-center gap-1"><i class="ph ph-sign-out text-xl"></i> <span class="hidden sm:inline">登出</span></button>
         </div>
@@ -436,6 +438,7 @@
         const isFetchingData = ref(false);
         const isSaving = ref(false);
         const isRegSuccess = ref(false);
+        const isLinkCopied = ref(false); // 🌟 新增：控制複製按鈕狀態
 
         const toast = ref({ show: false, message: '', type: 'success' });
         const showToast = (msg, type = 'success') => { toast.value = { show: true, message: msg, type }; setTimeout(() => { toast.value.show = false; }, 3000); };
@@ -698,6 +701,52 @@
             isMediaModalOpen.value = false; 
         };
 
+        // 🌟 新增：一鍵複製並喚醒 LINE 發送的魔法函數
+        const copyAndShareLiffUrl = async () => {
+            if (!currentUser.value) return;
+            
+            // 動態組合出該會員專屬的 LIFF 網址
+            const liffId = "2009561347-VUhbtrEC"; 
+            const shareUrl = `https://liff.line.me/${liffId}?id=${currentUser.value.memberId}`;
+            const shareText = `哈囉！這是我的E-LINE-CARD，請點擊連結查看：\n${shareUrl}`;
+            
+            try {
+                // 1. 複製到剪貼簿
+                await navigator.clipboard.writeText(shareUrl);
+                
+                // 2. 改變按鈕狀態給予視覺回饋
+                isLinkCopied.value = true;
+                showToast('已複製網址，準備為您開啟 LINE！');
+                
+                // 3. 延遲 1.5 秒後，用 URL Scheme 喚醒 LINE App 選擇好友
+                setTimeout(() => {
+                    const lineUrlScheme = `https://line.me/R/msg/text/?${encodeURIComponent(shareText)}`;
+                    window.open(lineUrlScheme, '_blank');
+                    
+                    // 恢復按鈕原本的狀態
+                    setTimeout(() => { isLinkCopied.value = false; }, 2000);
+                }, 1500);
+
+            } catch (err) {
+                // 針對舊版瀏覽器的備用複製方案
+                const input = document.createElement('textarea');
+                input.value = shareUrl;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                
+                isLinkCopied.value = true;
+                showToast('已複製網址，準備為您開啟 LINE！');
+                
+                setTimeout(() => {
+                    const lineUrlScheme = `https://line.me/R/msg/text/?${encodeURIComponent(shareText)}`;
+                    window.open(lineUrlScheme, '_blank');
+                    setTimeout(() => { isLinkCopied.value = false; }, 2000);
+                }, 1500);
+            }
+        };
+
         return { 
           currentView, activeTab, currentUser, loginForm, regForm, isRegSuccess, colorMatrix,
           buttonTypes, getPlaceholder, buildFinalLink,
@@ -706,7 +755,8 @@
           handleLogin, handleRegister, logout, saveAllData, saveSlidesData, autoResize,
           profile, buttons, slides, addNewButton, addNewSlide, moveItem, 
           isMediaModalOpen, mediaImages, isLoadingImages, openMediaLibrary, closeMediaLibrary, selectImage,
-          handleFileSelect, isCropModalOpen, isUploading, closeCropper, confirmCropAndUpload
+          handleFileSelect, isCropModalOpen, isUploading, closeCropper, confirmCropAndUpload,
+          isLinkCopied, copyAndShareLiffUrl // 導出新功能給 HTML 使用
         };
       }
     }).mount('#app');
